@@ -113,7 +113,7 @@
             enable = lib.mkEnableOption "Beyond Compare 5";
             package = lib.mkOption {
               type = lib.types.package;
-              default = self.packages.${pkgs.system}.bcompare5;
+              default = self.packages.${pkgs.stdenv.hostPlatform.system}.bcompare5;
               description = "The bcompare5 package to use.";
             };
           };

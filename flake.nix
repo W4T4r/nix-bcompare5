@@ -20,7 +20,7 @@
           pkgs = nixpkgsFor.${system};
         in
         {
-          bcompare = pkgs.stdenv.mkDerivation rec {
+          bcompare5 = pkgs.stdenv.mkDerivation rec {
             pname = "bcompare5";
             version = "5.2.0.31950";
 
@@ -100,21 +100,21 @@
             };
           };
 
-          default = self.packages.${system}.bcompare;
+          default = self.packages.${system}.bcompare5;
         }
       );
 
       homeManagerModules.default = { config, lib, pkgs, ... }:
         let
-          cfg = config.programs.bcompare;
+          cfg = config.programs.bcompare5;
         in
         {
-          options.programs.bcompare = {
+          options.programs.bcompare5 = {
             enable = lib.mkEnableOption "Beyond Compare 5";
             package = lib.mkOption {
               type = lib.types.package;
-              default = self.packages.${pkgs.system}.bcompare;
-              description = "The bcompare package to use.";
+              default = self.packages.${pkgs.system}.bcompare5;
+              description = "The bcompare5 package to use.";
             };
           };
 

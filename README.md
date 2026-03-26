@@ -1,12 +1,41 @@
 # Beyond Compare 5 Nix Flake
 
-This is a Flake for using Beyond Compare 5 on NixOS or with Home Manager.
+A small Nix flake that packages the official Beyond Compare 5 Linux tarball and
+exposes a Home Manager module.
 
-## Usage (Home Manager)
+## Supported Systems
 
-Add this repository to the `inputs` of your `flake.nix` and load the `homeManagerModules` to use it.
+- `x86_64-linux`
 
-### 1. Configure `flake.nix`
+## What This Flake Exposes
+
+- `packages.x86_64-linux.bcompare5`
+- `packages.x86_64-linux.default`
+- `apps.x86_64-linux.default`
+- `homeManagerModules.default`
+- `homeManagerModules.bcompare5`
+
+## Usage
+
+### Run directly
+
+```bash
+nix run github:W4T4r/bcompare5
+```
+
+### Use only the package
+
+```nix
+{
+  home.packages = [
+    inputs.bcompare5.packages.${pkgs.system}.default
+  ];
+}
+```
+
+### Use with Home Manager
+
+Add this repository to the `inputs` of your `flake.nix` and load the module:
 
 ```nix
 {
@@ -14,7 +43,6 @@ Add this repository to the `inputs` of your `flake.nix` and load the `homeManage
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     home-manager.url = "github:nix-community/home-manager";
 
-    # Add this repository
     bcompare5 = {
       url = "github:W4T4r/bcompare5";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -23,14 +51,13 @@ Add this repository to the `inputs` of your `flake.nix` and load the `homeManage
 
   outputs = { nixpkgs, home-manager, bcompare5, ... }: {
     homeConfigurations."youruser" = home-manager.lib.homeManagerConfiguration {
-      # Beyond Compare is unfree, so allowUnfree must be set
       pkgs = import nixpkgs {
         system = "x86_64-linux";
         config.allowUnfree = true;
       };
+
       modules = [
         ./home.nix
-        # Add the module
         bcompare5.homeManagerModules.default
       ];
     };
@@ -38,9 +65,7 @@ Add this repository to the `inputs` of your `flake.nix` and load the `homeManage
 }
 ```
 
-### 2. Enable in `home.nix`
-
-After loading the module, install Beyond Compare by adding the following setting:
+Then enable it in `home.nix`:
 
 ```nix
 {
@@ -48,19 +73,31 @@ After loading the module, install Beyond Compare by adding the following setting
 }
 ```
 
-## Using Only the Package
-
-It is also possible to use the package directly without the module.
+If needed, you can override the package used by the module:
 
 ```nix
 {
-  home.packages = [
-    inputs.bcompare5.packages.x86_64-linux.default
-  ];
+  programs.bcompare5 = {
+    enable = true;
+    package = inputs.bcompare5.packages.${pkgs.system}.bcompare5;
+  };
 }
 ```
 
-## License
+## Development
 
-Beyond Compare is commercial software (unfree). A valid license is required for use.
-This Flake does not include the binary itself. It provides only a recipe to download the official binary and apply patches.
+```bash
+nix fmt
+nix build .#bcompare5
+```
+
+`nix develop` provides `nixfmt-rfc-style` for local formatting.
+
+## Licensing
+
+The repository contents are licensed under MIT. See `LICENSE`.
+
+Beyond Compare itself is commercial software and remains unfree. A valid
+license is required for continued use. This flake does not redistribute the
+application source code; it fetches the official binary release from Scooter
+Software.

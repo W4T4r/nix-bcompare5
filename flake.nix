@@ -13,25 +13,42 @@
         inherit system;
         config.allowUnfree = true;
       });
+      homeManagerModule = { config, lib, pkgs, ... }:
+        let
+          cfg = config.programs.bcompare5;
+        in
+        {
+          options.programs.bcompare5 = {
+            enable = lib.mkEnableOption "Beyond Compare 5";
+            package = lib.mkOption {
+              type = lib.types.package;
+              default = self.packages.${pkgs.stdenv.hostPlatform.system}.bcompare5;
+              description = "The bcompare5 package to use.";
+            };
+          };
+
+          config = lib.mkIf cfg.enable {
+            home.packages = [ cfg.package ];
+          };
+        };
     in
     {
       packages = forAllSystems (system:
         let
           pkgs = nixpkgsFor.${system};
         in
-        {
+        rec {
           bcompare5 = pkgs.stdenv.mkDerivation rec {
             pname = "bcompare5";
-            version = "5.2.0.31950";
+            version = "5.2.1.32035";
 
             src = pkgs.fetchurl {
               url = "https://www.scootersoftware.com/files/bcompare-${version}.x86_64.tar.gz";
-              sha256 = "1dbkkwb077gql3gs69whdcf90llw82cwvypaqz04a8s66w59ss7l";
+              sha256 = "121in8dmlljgbfa604v4im616yk9i0gsvahcds97n651kpxnkzq4";
             };
 
             nativeBuildInputs = [
               pkgs.autoPatchelfHook
-              pkgs.makeWrapper
             ];
 
             buildInputs = [
@@ -75,18 +92,34 @@
             installPhase = ''
               runHook preInstall
 
-              mkdir -p $out/bin $out/lib/bcompare $out/share/applications $out/share/pixmaps
+              mkdir -p \
+                $out/bin \
+                $out/lib/bcompare \
+                $out/share/applications \
+                $out/share/mime/packages \
+                $out/share/pixmaps
 
               cp -r * $out/lib/bcompare/
 
-              ln -s $out/lib/bcompare/BCompare $out/bin/bcompare
+              install -m 755 bcompare.sh $out/bin/bcompare
+              substituteInPlace $out/bin/bcompare \
+                --replace-fail "BC_LIB=" "BC_LIB=$out/lib/bcompare" \
+                --replace-fail "BC_PACKAGE_TYPE=" "BC_PACKAGE_TYPE=archive" \
+                --replace-fail "/bin/bash" "${pkgs.bash}/bin/bash"
+
+              patchShebangs $out/bin $out/lib/bcompare
 
               if [ -f bcompare.desktop ]; then
                 cp bcompare.desktop $out/share/applications/
                 substituteInPlace $out/share/applications/bcompare.desktop \
-                  --replace "Exec=/usr/bin/bcompare" "Exec=$out/bin/bcompare" \
-                  --replace "Icon=bcompare" "Icon=bcompare"
+                  --replace-fail "Exec=bcompare %f" "Exec=$out/bin/bcompare %f" \
+                  --replace-fail "TryExec=bcompare" "TryExec=$out/bin/bcompare"
               fi
+
+              if [ -f bcompare.xml ]; then
+                cp bcompare.xml $out/share/mime/packages/
+              fi
+
               cp bcompare.png $out/share/pixmaps/
 
               runHook postInstall
@@ -96,31 +129,42 @@
               description = "Beyond Compare 5 - Powerful File and Folder Comparison";
               homepage = "https://www.scootersoftware.com/";
               license = licenses.unfree;
-              platforms = platforms.linux;
+              mainProgram = "bcompare";
+              platforms = supportedSystems;
+              sourceProvenance = with sourceTypes; [ binaryNativeCode ];
             };
           };
 
-          default = self.packages.${system}.bcompare5;
+          default = bcompare5;
         }
       );
 
-      homeManagerModules.default = { config, lib, pkgs, ... }:
+      apps = forAllSystems (system:
+        rec {
+          bcompare5 = {
+            type = "app";
+            program = "${self.packages.${system}.bcompare5}/bin/bcompare";
+          };
+          default = bcompare5;
+        }
+      );
+
+      devShells = forAllSystems (system:
         let
-          cfg = config.programs.bcompare5;
+          pkgs = nixpkgsFor.${system};
         in
         {
-          options.programs.bcompare5 = {
-            enable = lib.mkEnableOption "Beyond Compare 5";
-            package = lib.mkOption {
-              type = lib.types.package;
-              default = self.packages.${pkgs.stdenv.hostPlatform.system}.bcompare5;
-              description = "The bcompare5 package to use.";
-            };
+          default = pkgs.mkShell {
+            packages = [ pkgs.nixfmt-rfc-style ];
           };
+        }
+      );
 
-          config = lib.mkIf cfg.enable {
-            home.packages = [ cfg.package ];
-          };
-        };
+      formatter = forAllSystems (system: nixpkgsFor.${system}.nixfmt-rfc-style);
+
+      homeManagerModules = {
+        default = homeManagerModule;
+        bcompare5 = homeManagerModule;
+      };
     };
 }

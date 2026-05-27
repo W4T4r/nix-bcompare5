@@ -5,15 +5,25 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
       supportedSystems = [ "x86_64-linux" ];
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-      nixpkgsFor = forAllSystems (system: import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      });
-      homeManagerModule = { config, lib, pkgs, ... }:
+      nixpkgsFor = forAllSystems (
+        system:
+        import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+        }
+      );
+      homeManagerModule =
+        {
+          config,
+          lib,
+          pkgs,
+          ...
+        }:
         let
           cfg = config.programs.bcompare5;
         in
@@ -33,7 +43,8 @@
         };
     in
     {
-      packages = forAllSystems (system:
+      packages = forAllSystems (
+        system:
         let
           pkgs = nixpkgsFor.${system};
         in
@@ -139,17 +150,16 @@
         }
       );
 
-      apps = forAllSystems (system:
-        rec {
-          bcompare5 = {
-            type = "app";
-            program = "${self.packages.${system}.bcompare5}/bin/bcompare";
-          };
-          default = bcompare5;
-        }
-      );
+      apps = forAllSystems (system: rec {
+        bcompare5 = {
+          type = "app";
+          program = "${self.packages.${system}.bcompare5}/bin/bcompare";
+        };
+        default = bcompare5;
+      });
 
-      devShells = forAllSystems (system:
+      devShells = forAllSystems (
+        system:
         let
           pkgs = nixpkgsFor.${system};
         in

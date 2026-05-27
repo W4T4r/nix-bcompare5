@@ -51,11 +51,11 @@
         rec {
           bcompare5 = pkgs.stdenv.mkDerivation rec {
             pname = "bcompare5";
-            version = "5.2.1.32035";
+            version = "5.2.2.32209";
 
             src = pkgs.fetchurl {
               url = "https://www.scootersoftware.com/files/bcompare-${version}.x86_64.tar.gz";
-              sha256 = "121in8dmlljgbfa604v4im616yk9i0gsvahcds97n651kpxnkzq4";
+              sha256 = "0h2aa87w3yh4as74dlk0bvpyz7289kaqxlshfn6pdcl8yp5l2na0";
             };
 
             nativeBuildInputs = [
